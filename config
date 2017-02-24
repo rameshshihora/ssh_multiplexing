@@ -1,0 +1,52 @@
+# Below setting work in Mac, CentOS - Tested! 
+# If you have yubi key in your environment, it will jsut cache the entry.
+# You can limit the persist caching by "ControlPersist 10m" 
+
+# SSH multiplexing is the ability to carry multiple SSH sessions over a 
+# single TCP connection.
+
+# The ControlPath entry specifies where to store the “control socket” for 
+# the multiplexed connections. In this case, %r refers to the remote login name, 
+# %h refers to the target host name, and %p refers to the destination port. 
+# Including this information in the control socket name helps SSH separate 
+# control sockets for connections to different hosts.
+
+# The ControlMaster setting is what activates multiplexing. With the auto 
+# setting, SSH will try to use a master connection if one exists, but if 
+# one doesn’t exist it will create a new one (this is probably the most 
+# flexible approach, but you can refer to ssh-config(5) for more details 
+# on the other settings).
+
+# Finally, the ControlPersist setting keeps the master connection alive for 
+# the specified period of time after it has remained idle (no connections). 
+# After that time, the master connection will be closed. In this example, 
+# we’ve specified that the master connection should remain open for 10 minutes 
+# after becoming idle. Subsequent SSH sessions made while the master connection 
+# is open will leverage the master connection and will reset the idle timer.
+
+# You just need to add below in your ${HOME}/.ssh/config
+# If file doesnt exists then create it 
+
+host *<regex/name>*
+    StrictHostKeyChecking no
+    UserKnownHostsFile=/dev/null
+    LogLevel=ERROR  
+    #LogLevel=quiet
+    User <userid>
+    ForwardAgent true
+    ProxyCommand none
+    ControlMaster auto
+    ControlPersist yes
+    ControlPath ~/.ssh/master-%r@%h:%p
+Host <colo>-<server_starting_string>*
+      ProxyCommand ssh <youruserid>@<jumphost> exec nc %h %p 2>/dev/null
+host <colo>-*
+    StrictHostKeyChecking no
+    UserKnownHostsFile=/dev/null
+    LogLevel=ERROR  
+    #LogLevel=quiet
+    ForwardAgent true
+    User <userid>
+       ProxyCommand ssh -q -W %h:%p <jumphost>
+
+ServerAliveInterval 10
